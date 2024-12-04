@@ -18,15 +18,15 @@
     "version": "1.0.1-t.22",
     "aarch64": {
       "url": "https://github.com/zen-browser/desktop/releases/download/twilight/zen.linux-aarch64.tar.bz2",
-      "hash": "sha256-rW4+AkwYUjuz6g3rQDpzgYUZLb5UZr6OyzliXwyUpdk="
+      "hash": "sha256-sisFPcBvdNMCOlWxvsNrbCrKl7A9TSaX/ApUAnrQvuI="
     },
     "generic": {
       "url": "https://github.com/zen-browser/desktop/releases/download/twilight/zen.linux-generic.tar.bz2",
-      "hash": "sha256-+mCim3LwhNQiRtpXe3cO6pmNygn85TNPwWLYss9tsdg="
+      "hash": "sha256-IY5qKv3OQOhUfdyw57l4p7g9g2UBRV/Y5cXKxT4Ewyk="
     },
     "specific": {
       "url": "https://github.com/zen-browser/desktop/releases/download/twilight/zen.linux-specific.tar.bz2",
-      "hash": "sha256-ezc7zwvoV4i1XgvTvtPRCW24N9FQrxh/x3QhfA3N52I="
+      "hash": "sha256-cuFJI4PgdFlEn++hcm7HQt+NS1D9PTinRs1X4HF0emM="
     }
   }
 }
