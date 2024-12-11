@@ -21,16 +21,21 @@ class Channel(TypedDict):
 
 class Info(TypedDict):
     alpha: Channel
+    beta: Channel
     twilight: Channel
 
 
-def parse_version(release: dict[str, str]) -> str:
-    return release["name"].split(" - ")[1].split(" (")[0]
-
+def parse_version(url: str, channel: str) -> str:
+    versions: list[dict[str, str]] | dict[str, str] = get(url).json()
+    if isinstance(versions, dict):
+        versions = [versions]
+    return list(filter(
+        lambda v: v["name"].lower().startswith(channel),
+        versions        
+    ))[0]["name"].split(" - ")[1].split(" (")[0]
 
 
 def check_new_version(old_version: str, new_version: str, channel: str) -> bool:
-    
     return (channel == "t" or old_version != new_version) and bool(compile(f"^[0-9]\\.[0-9]\\.[0-9]-{channel}\\.").match(new_version))
 
 
@@ -47,10 +52,12 @@ def update_download(tag: str, variant: str, channel: Channel) -> Channel:
 
 
 def update_info(channel: str, version: str, tag: str, info: Info) -> Info:
+    print(f"Found new {channel} version: {version}! Prefetching...")
     info[channel]["version"] = version
     info[channel] = update_download(tag, "aarch64", info[channel])
     info[channel] = update_download(tag, "generic", info[channel])
     info[channel] = update_download(tag, "specific", info[channel])
+    print("Done.")
     return info
 
 
@@ -61,31 +68,33 @@ def main(info_file: str) -> None:
 
     baseUrl: str = "https://api.github.com/repos/zen-browser/desktop/releases"
     
-    alpha_version: str = parse_version(get(f"{baseUrl}?per_page=1").json()[0])
+    alpha_version: str = parse_version(baseUrl, "alpha")
     new_alpha_version: bool = check_new_version(
         info["alpha"]["version"],
         alpha_version,
         "a"
     )
-    twilight_version: str = parse_version(get(f"{baseUrl}/tags/twilight").json())
+    beta_version: str = parse_version(baseUrl, "beta")
+    new_beta_version: bool = check_new_version(
+        info["beta"]["version"],
+        beta_version,
+        "b"
+    )
+    twilight_version: str = parse_version(f"{baseUrl}/tags/twilight", "twilight")
     new_twilight_version: bool = check_new_version(
         info["twilight"]["version"],
         twilight_version,
         "t"
     )
-    
-    if new_alpha_version or new_twilight_version:
-        if new_alpha_version:
-            print(f"Found new alpha version: {alpha_version}")
-        if new_twilight_version:
-            print(f"Found new twilight version: {twilight_version}")
 
-        print("Prefetching files...")
-        if new_alpha_version:
-            info = update_info("alpha", alpha_version, alpha_version, info)
-        if new_twilight_version:
-            info = update_info("twilight", twilight_version, "twilight", info)
+    if new_alpha_version:
+        info = update_info("alpha", alpha_version, alpha_version, info)
+    if new_beta_version:
+        info = update_info("beta", beta_version, beta_version, info)
+    if new_twilight_version:
+        info = update_info("twilight", twilight_version, "twilight", info)
 
+    if new_beta_version or new_beta_version or new_twilight_version:
         with open(file=info_file, mode="w", encoding="utf-8") as f:
             dump(info, f, indent=2)
     else:

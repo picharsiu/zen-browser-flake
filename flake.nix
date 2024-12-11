@@ -47,6 +47,7 @@
       packages =
         mkZenChannels [
           "alpha"
+          "beta"
           "twilight"
         ] (
           if system == "aarch64-linux"
