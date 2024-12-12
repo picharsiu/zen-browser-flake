@@ -38,29 +38,27 @@ def check_new_version(tag: str | None, channel: str, old_version: str, new_versi
         and bool(compile(f"^[0-9]\\.[0-9]\\.[0-9]-{channel}\\.").match(new_version))
 
 
-def update_download(tag: str, variant: str, channel: Channel) -> Channel:
+def update_download(tag: str, variant: str, channel: Channel) -> None:
     url: str = f"https://github.com/zen-browser/desktop/releases/download/{tag}/zen.linux-{variant}.tar.bz2"
     channel[variant] = {
         "url": url,
         "hash": loads(run(
-            ["nix", "store", "prefetch-file", url, "--log-format", "raw", "--json"], 
+            f"nix store prefetch-file {url} --log-format raw --json".split(),
             stdout=PIPE
         ).stdout.decode("utf-8"))["hash"]
     }
-    return channel
 
 
-def update_info(channel: str, version: str, tag: str, info: Info) -> Info:
+def update_info(channel: str, version: str, tag: str, info: Info) -> None:
     print(f"Found new {channel} version: {version}! Prefetching...")
     info[channel]["version"] = version
-    info[channel] = update_download(tag, "aarch64", info[channel])
-    info[channel] = update_download(tag, "generic", info[channel])
-    info[channel] = update_download(tag, "specific", info[channel])
+    for variant in {"aarch64", "generic", "specific"}:
+        update_download(tag, variant, info[channel])
     print("Done.")
-    return info
 
 
-def process_channel(info: Info, name: str, tag: str | None) -> bool:
+def process_channel(info: Info, name: str) -> bool:
+    tag: str | None = info[name].get("tag", None)
     baseUrl: str = "https://api.github.com/repos/zen-browser/desktop/releases"
     version: str = parse_version(baseUrl, name)
     new_version: bool = check_new_version(
@@ -70,7 +68,7 @@ def process_channel(info: Info, name: str, tag: str | None) -> bool:
         version,
     )
     if new_version:
-        info = update_info(name, version, version if tag is None else tag, info)
+        update_info(name, version, version if tag is None else tag, info)
     return new_version
 
 
@@ -78,10 +76,12 @@ def main(info_file: str) -> None:
     with open(file=info_file, mode="r", encoding="utf-8") as f:
         info: Info = Info(**load(f))
 
-    if any(map(
-        lambda c: process_channel(info, c[0], c[1].get("tag", None)), 
-        info.items()
-    )):
+    updated: bool = False
+
+    for channel in info.keys():
+        updated = process_channel(info, channel) or updated
+
+    if updated:
         with open(file=info_file, mode="w", encoding="utf-8") as f:
             dump(info, f, indent=2)
     else:
