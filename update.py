@@ -13,16 +13,14 @@ class Variant(TypedDict):
 
 
 class Channel(TypedDict):        
+    tag: str | None
     version: str
     aarch64: Variant
     generic: Variant
     specific: Variant
 
 
-class Info(TypedDict):
-    alpha: Channel
-    beta: Channel
-    twilight: Channel
+Info = dict[str, Channel]
 
 
 def parse_version(url: str, channel: str) -> str:
@@ -35,8 +33,9 @@ def parse_version(url: str, channel: str) -> str:
     ))[0]["name"].split(" - ")[1].split(" (")[0]
 
 
-def check_new_version(old_version: str, new_version: str, channel: str) -> bool:
-    return (channel == "t" or old_version != new_version) and bool(compile(f"^[0-9]\\.[0-9]\\.[0-9]-{channel}\\.").match(new_version))
+def check_new_version(tag: str | None, channel: str, old_version: str, new_version: str) -> bool:
+    return (tag is not None or old_version != new_version) \
+        and bool(compile(f"^[0-9]\\.[0-9]\\.[0-9]-{channel}\\.").match(new_version))
 
 
 def update_download(tag: str, variant: str, channel: Channel) -> Channel:
@@ -61,40 +60,28 @@ def update_info(channel: str, version: str, tag: str, info: Info) -> Info:
     return info
 
 
+def process_channel(info: Info, name: str, tag: str | None) -> bool:
+    baseUrl: str = "https://api.github.com/repos/zen-browser/desktop/releases"
+    version: str = parse_version(baseUrl, name)
+    new_version: bool = check_new_version(
+        tag,
+        name[0],
+        info[name]["version"],
+        version,
+    )
+    if new_version:
+        info = update_info(name, version, version if tag is None else tag, info)
+    return new_version
+
 
 def main(info_file: str) -> None:
     with open(file=info_file, mode="r", encoding="utf-8") as f:
         info: Info = Info(**load(f))
 
-    baseUrl: str = "https://api.github.com/repos/zen-browser/desktop/releases"
-    
-    alpha_version: str = parse_version(baseUrl, "alpha")
-    new_alpha_version: bool = check_new_version(
-        info["alpha"]["version"],
-        alpha_version,
-        "a"
-    )
-    beta_version: str = parse_version(baseUrl, "beta")
-    new_beta_version: bool = check_new_version(
-        info["beta"]["version"],
-        beta_version,
-        "b"
-    )
-    twilight_version: str = parse_version(f"{baseUrl}/tags/twilight", "twilight")
-    new_twilight_version: bool = check_new_version(
-        info["twilight"]["version"],
-        twilight_version,
-        "t"
-    )
-
-    if new_alpha_version:
-        info = update_info("alpha", alpha_version, alpha_version, info)
-    if new_beta_version:
-        info = update_info("beta", beta_version, beta_version, info)
-    if new_twilight_version:
-        info = update_info("twilight", twilight_version, "twilight", info)
-
-    if new_beta_version or new_beta_version or new_twilight_version:
+    if any(map(
+        lambda c: process_channel(info, c[0], c[1].get("tag", None)), 
+        info.items()
+    )):
         with open(file=info_file, mode="w", encoding="utf-8") as f:
             dump(info, f, indent=2)
     else:
