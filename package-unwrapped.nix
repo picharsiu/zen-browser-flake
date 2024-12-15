@@ -22,6 +22,7 @@
   xorg,
   # package-related
   sourceInfo,
+  iconsDir ? "browser/chrome/icons/default",
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "zen-browser-${sourceInfo.variant}-unwrapped";
@@ -51,6 +52,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mkdir -p $out/lib/zen && cp -r * $out/lib/zen
 
     fd --type x --exclude '*.so' --exec ln -s $out/lib/zen/{} $out/bin/{}
+
+    cp ${iconsDir}/* $out/lib/zen/browser/chrome/icons/default
 
     # link icons to the appropriate places
     pushd $out/lib/zen/browser/chrome/icons/default
