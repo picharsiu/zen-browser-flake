@@ -10,11 +10,13 @@
     self,
     nixpkgs,
     flake-utils,
-  }:
-    flake-utils.lib.eachSystem [
-      "aarch64-linux"
-      "x86_64-linux"
-    ] (system: let
+  }: let
+    variants = {
+      aarch64-linux = ["aarch64"];
+      x86_64-linux = ["generic" "specific"];
+    };
+  in
+    flake-utils.lib.eachSystem (builtins.attrNames variants) (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (pkgs) lib;
 
@@ -23,39 +25,46 @@
         builtins.fromJSON
       ];
 
-      mkZen = channel: variant:
-        pkgs.callPackage ./package.nix {
-          sourceInfo = {
-            inherit channel variant system;
-            src = info.${channel}.${variant};
-            inherit (info.${channel}) version;
-          };
+      mkZen = {
+        channel,
+        variant,
+      }: let
+        sourceInfo = {
+          inherit channel variant system;
+          src = info.${channel}.${variant};
+          inherit (info.${channel}) version;
         };
+        unwrapped = pkgs.callPackage ./package-unwrapped.nix {inherit sourceInfo;};
+        wrapped = pkgs.callPackage ./package.nix {
+          inherit sourceInfo;
+          zen-browser-unwrapped = unwrapped;
+        };
+      in {
+        ${channel} = {
+          "${variant}-unwrapped" = unwrapped;
+          ${variant} = wrapped;
+        };
+      };
 
-      mkZenChannel = channel: variants:
-        lib.pipe variants [
-          (map (variant: lib.nameValuePair variant (mkZen channel variant)))
-          builtins.listToAttrs
-        ];
-
-      mkZenChannels = channels: variants:
-        lib.pipe channels [
-          (map (channel: lib.nameValuePair channel (mkZenChannel channel variants)))
-          builtins.listToAttrs
+      mkZenChannels = channel: variant:
+        lib.pipe {inherit channel variant;} [
+          lib.cartesianProduct
+          (map mkZen)
+          (builtins.zipAttrsWith (
+            name: values:
+              lib.pipe values [
+                (map lib.attrsToList)
+                builtins.concatLists
+                builtins.listToAttrs
+              ]
+          ))
         ];
     in {
-      packages =
-        mkZenChannels [
-          "alpha"
-          "beta"
-          "twilight"
-        ] (
-          if system == "aarch64-linux"
-          then ["aarch64"]
-          else [
-            "generic"
-            "specific"
-          ]
-        );
+      packages = mkZenChannels [
+        "alpha"
+        "beta"
+        "twilight"
+      ]
+      variants.${system};
     });
 }
