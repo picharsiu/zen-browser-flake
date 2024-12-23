@@ -86,39 +86,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     wrapGApp $out/bin/zen
   '';
 
-  desktopItems = makeDesktopItem {
-    name = "zen-browser-${sourceInfo.channel}";
-    desktopName = "Zen Browser${
-      if sourceInfo.variant == "twilight"
-      then " Twilight"
-      else ""
-    }";
-    categories = ["Network" "WebBrowser"];
-    exec = "zen --name zen %U";
-    genericName = "Web Browser";
-    icon = "zen";
-    keywords = ["Internet" "WWW" "Browser" "Web" "Explorer"];
-    mimeTypes = ["text/html" "text/xml" "application/xhtml+xml" "x-scheme-handler/http" "x-scheme-handler/https" "application/x-xpinstall" "application/pdf" "application/json"];
-    startupNotify = true;
-    startupWMClass = "zen-${sourceInfo.channel}";
-    terminal = false;
-    extraConfig.X-MultipleArgs = "false";
-    actions = {
-      new-window = {
-        name = "New Window";
-        exec = "zen --new-window %U";
-      };
-      new-private-window = {
-        name = "New Private Window";
-        exec = "zen --private-window %U";
-      };
-      profile-manager-window = {
-        name = "Profile Manager";
-        exec = "zen --ProfileManager %U";
-      };
-    };
-  };
-
   meta = {
     homepage = "https://zen-browser.app";
     description = "Beautiful, fast, private browser";
