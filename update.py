@@ -15,9 +15,7 @@ class Variant(TypedDict):
 class Channel(TypedDict):        
     tag: str | None
     version: str
-    aarch64: Variant
-    generic: Variant
-    specific: Variant
+    systems: dict[str, Variant]
 
 
 Info = dict[str, Channel]
@@ -38,9 +36,9 @@ def check_new_version(tag: str | None, channel: str, old_version: str, new_versi
         and bool(compile(f"^[0-9]\\.[0-9]\\.[0-9]-{channel}\\.").match(new_version))
 
 
-def update_download(tag: str, variant: str, channel: Channel) -> None:
-    url: str = f"https://github.com/zen-browser/desktop/releases/download/{tag}/zen.linux-{variant}.tar.bz2"
-    channel[variant] = {
+def update_download(tag: str, system: str, channel: Channel) -> None:
+    url: str = f"https://github.com/zen-browser/desktop/releases/download/{tag}/zen.{system}.tar.bz2"
+    channel["systems"][system] = {
         "url": url,
         "hash": loads(run(
             f"nix store prefetch-file {url} --log-format raw --json".split(),
@@ -52,8 +50,8 @@ def update_download(tag: str, variant: str, channel: Channel) -> None:
 def update_info(channel: str, version: str, tag: str, info: Info) -> None:
     print(f"Found new {channel} version: {version}! Prefetching...")
     info[channel]["version"] = version
-    for variant in {"aarch64", "generic", "specific"}:
-        update_download(tag, variant, info[channel])
+    for system in info[channel]["systems"].keys():
+        update_download(tag, system, info[channel])
     print("Done.")
 
 

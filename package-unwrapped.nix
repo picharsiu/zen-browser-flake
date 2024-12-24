@@ -5,7 +5,6 @@
   autoPatchelfHook,
   wrapGAppsHook,
   copyDesktopItems,
-  makeDesktopItem,
   fd,
   # deps
   alsa-lib,
@@ -25,7 +24,7 @@
   iconsDir ? "browser/chrome/icons/default",
 }:
 stdenvNoCC.mkDerivation (finalAttrs: {
-  pname = "zen-browser-${sourceInfo.variant}-unwrapped";
+  pname = "zen-browser-unwrapped";
   inherit (sourceInfo) version;
 
   src = fetchurl sourceInfo.src;

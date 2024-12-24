@@ -11,12 +11,12 @@
     nixpkgs,
     flake-utils,
   }: let
-    variants = {
-      aarch64-linux = ["aarch64"];
-      x86_64-linux = ["generic" "specific"];
+    systems = {
+      aarch64-linux = "linux-aarch64";
+      x86_64-linux = "linux-x86_64";
     };
   in
-    flake-utils.lib.eachSystem (builtins.attrNames variants) (system: let
+    flake-utils.lib.eachSystem (builtins.attrNames systems) (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (pkgs) lib;
 
@@ -25,46 +25,31 @@
         builtins.fromJSON
       ];
 
-      mkZen = {
-        channel,
-        variant,
-      }: let
+      mkZen = channel: let
         sourceInfo = {
-          inherit channel variant system;
-          src = info.${channel}.${variant};
+          inherit channel system;
           inherit (info.${channel}) version;
+          src = info.${channel}.systems.${systems.${system}};
         };
+
         unwrapped = pkgs.callPackage ./package-unwrapped.nix {inherit sourceInfo;};
-        wrapped = pkgs.callPackage ./package.nix {
-          inherit sourceInfo;
-          zen-browser-unwrapped = unwrapped;
-        };
+        wrapped = pkgs.callPackage ./package.nix {inherit unwrapped;};
       in {
-        ${channel} = {
-          "${variant}-unwrapped" = unwrapped;
-          ${variant} = wrapped;
-        };
+        "${channel}-unwrapped" = unwrapped;
+        ${channel} = wrapped;
       };
 
-      mkZenChannels = channel: variant:
-        lib.pipe {inherit channel variant;} [
-          lib.cartesianProduct
+      mkZenChannels = channels:
+        lib.pipe channels [
           (map mkZen)
-          (builtins.zipAttrsWith (
-            name: values:
-              lib.pipe values [
-                (map lib.attrsToList)
-                builtins.concatLists
-                builtins.listToAttrs
-              ]
-          ))
+          lib.zipAttrs
+          (builtins.mapAttrs (_: drv: builtins.elemAt drv 0))
         ];
     in {
       packages = mkZenChannels [
         "alpha"
         "beta"
         "twilight"
-      ]
-      variants.${system};
+      ];
     });
 }

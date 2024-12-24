@@ -16,20 +16,14 @@ inputs = {
 
 ## Packages
 
-This flake exposes three channels, alpha, beta and twilight, each with two packages, corresponding to the `specific` and `generic` zen versions.
-The generic version maximizes compatibility with old CPUs and kernels by compiling it with some
-lower common denominator CFLAGS, the `specific` one targets newer CPUs and kernels but it may not
-work in your case.
+This flake exposes three channels, alpha, beta and twilight. [There are no generic and specific versions.](https://github.com/zen-browser/desktop/wiki/Why-have-optimized-builds-been-removed%3F)
 
 Then in the `configuration.nix` in the `environment.systemPackages` add one of:
 
 ```nix
-inputs.zen-browser.packages."${system}".alpha.specific
-inputs.zen-browser.packages."${system}".alpha.generic
-inputs.zen-browser.packages."${system}".beta.specific
-inputs.zen-browser.packages."${system}".beta.generic
-inputs.zen-browser.packages."${system}".twilight.specific
-inputs.zen-browser.packages."${system}".twilight.generic
+inputs.zen-browser.packages."${system}".alpha
+inputs.zen-browser.packages."${system}".beta
+inputs.zen-browser.packages."${system}".twilight
 ```
 
 Depending on which version you want
