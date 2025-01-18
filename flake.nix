@@ -47,6 +47,7 @@
         ];
     in {
       packages = mkZenChannels [
+        "release"
         "alpha"
         "beta"
         "twilight"

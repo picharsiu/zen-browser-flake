@@ -16,11 +16,12 @@ inputs = {
 
 ## Packages
 
-This flake exposes three channels, alpha, beta and twilight. [There are no generic and specific versions.](https://github.com/zen-browser/desktop/wiki/Why-have-optimized-builds-been-removed%3F)
+This flake exposes four channels, release, alpha, beta and twilight. [There are no generic and specific versions.](https://github.com/zen-browser/desktop/wiki/Why-have-optimized-builds-been-removed%3F)
 
 Then in the `configuration.nix` in the `environment.systemPackages` add one of:
 
 ```nix
+inputs.zen-browser.packages."${system}".release
 inputs.zen-browser.packages."${system}".alpha
 inputs.zen-browser.packages."${system}".beta
 inputs.zen-browser.packages."${system}".twilight
